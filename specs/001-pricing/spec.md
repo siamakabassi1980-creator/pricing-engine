@@ -51,7 +51,11 @@ POST /price
      صدق کنند، فقط بیشترین مقدار اعمال می‌شود).
    - **مالیات روی مبلغ بعد از تخفیف، نه base خام** (VAT ایران روی مبلغ نهایی پرداختی):
        ```
-       base           = Σ(unit_price × qty)              // فقط روی qty > 0
+       base           = Σ(unit_price × qty)              // فقط وقتی محاسبه می‌شود
+                                                        // که همهٔ qtyها معتبر باشند؛
+                                                        // اگر حتی یک qty نامعتبر وجود
+                                                        // داشته باشد، کل درخواست رد
+                                                        // می‌شود (نه فیلتر تک‌آیتم)
        discount       = max(applicable_discounts)        // non-stacking, مقدار مطلق پولی
        subtotal       = base − discount
        tax            = subtotal × rate                  // rate فیکس: 0.09

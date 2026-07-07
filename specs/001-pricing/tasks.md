@@ -9,10 +9,16 @@
 - [ ] `pyproject.toml` با تنظیمات ruff، mypy، pytest، Hypothesis.
 - [ ] `requirements.txt` با fastapi, sqlalchemy, alembic, pydantic-settings,
       httpx, hypothesis, pytest, pytest-asyncio.
-- [ ] `mypy --strict` روی یک فایل خالی pass شود (صفر خطا).
-- [ ] `ruff check .` صفر خطا.
+- [ ] **تأیید mypy با خطای عمدی** (نه فایل خالی): یک فایل نمونه با خطای type
+      عمدی بساز (مثلاً `x: int = "string"`)، تأیید کن mypy واقعاً ردش می‌کند،
+      سپس پاکش کن. فایل خالی همیشه pass می‌شود — این هیچی را تأیید نمی‌کند.
+- [ ] **تأیید ruff با خطای عمدی:** یک فایل نمونه با خطای ruff عمدی بساز،
+      تأیید کن ruff واقعاً ردش می‌کند، سپس پاکش کن.
+- [ ] بعد از پاک‌کردن فایل‌های آزمایشی، `ruff check .` و `mypy --strict .`
+      روی کد واقعی صفر خطا.
 - [ ] commit: `chore(pricing): configure project dependencies and tooling`
-- **Done-criteria:** mypy + ruff صفر خطا روی فایل نمونه.
+- **Done-criteria:** mypy + ruff هر کدام با یک خطای عمدی رد شده‌اند (enforcement
+  تأیید شد)، سپس روی کد واقعی صفر خطا.
 
 ### T0.2 — config + db base + session
 - [ ] `app/config.py` با pydantic-settings (همهٔ env vars از plan.md).
@@ -91,6 +97,10 @@
   - product_id از catalog تطبیق می‌خورد؛ unit_price از catalog (نه از LLM) تزریق.
   - qty از LLM استخراج می‌شود.
 - [ ] تست با DummyLLM (نه DeepSeek واقعی).
+- [ ] **تست adversarial امنیتی:** LLM یک `unit_price` جعلی/منفی برگرداند،
+      تأیید کن سیستم آن را نادیده می‌گیرد و قیمت catalog را استفاده می‌کند.
+      (این تصمیم امنیتی در data-model.md ثبت شده — باید regression test داشته
+      باشد تا در آینده توسط اشتباه خراب نشود.)
 - [ ] Linter صفر.
 - [ ] commit: `feat(perception): add request parser service`
 
@@ -114,15 +124,31 @@
 - [ ] Linter صفر.
 - [ ] commit: `feat(api): add POST /price endpoint`
 
-### T4.2 — تست نهایی + Linter روی کل پروژه + type check
+### T4.2 — تست نهایی + Linter روی کل پروژه + type check + pip-audit
 - [ ] اجرای `pytest` روی همهٔ تست‌ها — همه pass.
 - [ ] اجرای `ruff check .` روی **کل پروژه** — صفر خطا.
 - [ ] اجرای `mypy --strict app/` — صفر خطا.
 - [ ] اجرای `pytest --cov=app/decision --cov-fail-under=80` — pass.
+- [ ] **اجرای `pip-audit` روی requirements.txt** (قانون constitution:
+      «بررسی دوره‌ای آسیب‌پذیری وابستگی‌ها») — صفر آسیب‌پذیری شناخته‌شده، یا
+      ثبت هر آسیب‌پذیری در status.md با ارزیابی.
 - [ ] اجرای دوبارهٔ `seed.py` — idempotency تأیید.
 - [ ] تست smoke اختیاری با DeepSeek واقعی (اگر `.env` کلید دارد).
 - [ ] به‌روزرسانی `docs/PROJECT_STATUS.md` و `status.md`.
 - [ ] commit: `test(pricing): full suite passes, coverage ≥80%, linters clean`
+
+### T4.3 — پایپ‌لاین CI (خط دوم دفاع)
+- [ ] ساخت `.github/workflows/ci.yml` که همون quality gate را اجرا کند:
+      `ruff check`، `mypy --strict`، `pytest --cov`، `pip-audit`.
+- [ ] ساختار مینیمال: trigger on push/PR به master، Python 3.11، نصب deps از
+      requirements.txt، اجرای gateها به‌ترتیب.
+- [ ] **تأیید محلی:** چون این ریپو فعلاً فقط لوکال است (بدون remote گیت‌هاب)،
+      تأیید واقعی اجرا ممکن نیست. فایل ساخته می‌شود ولی AC مربوطه به
+      **done-with-caveat** علامت می‌خورد تا remote واقعی وصل شود و اجرای واقعی
+      تأیید شود. (دقیقاً همان الگوی constitution برای زیرساخت غایب.)
+- [ ] در status.md یادداشت: «CI workflow ساخته شد ولی تا افزودن remote تأیید
+      نشده — نباید به‌عنوان done کامل حساب شود.»
+- [ ] commit: `ci(pricing): add GitHub Actions workflow as second line of defense`
 
 ## فاز ۵ — مستندسازی و بستن
 
