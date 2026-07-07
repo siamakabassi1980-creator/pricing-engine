@@ -99,15 +99,15 @@ def test_service_zero_discount_for_regular_normal() -> None:
 
 
 def test_service_rejects_empty_items_not_silent_zero_order() -> None:
-    """Empty items (e.g. from unparseable LLM response) -> rejected.
+    """Empty items -> rejected (unit test for the T1.5 gap, Decision-only).
 
-    INTEGRATION test for the silent-drop gap closed in T1.5: when Perception
-    returns empty items (because the LLM response was unparseable), the
-    Decision layer must reject with a clear reason — NOT produce a silent
-    'priced' 0-toman order.
+    NOTE: this is a UNIT test of Decision in isolation — it constructs
+    PurchaseRequest(items=[]) by hand. The TRUE integration test that
+    proves the Perception->Decision pipeline (garbage LLM -> parse_request
+    -> empty items -> price -> rejected) lives in
+    tests/test_perception_decision_integration.py.
 
-    Before the fix, this returned status='priced', total=0, which is the
-    anti-pattern. Now it must return status='rejected'.
+    Before the fix, this returned status='priced', total=0.
     """
     request = PurchaseRequest(
         items=[],
