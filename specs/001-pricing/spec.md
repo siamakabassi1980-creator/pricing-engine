@@ -43,23 +43,36 @@ POST /price
 1. endpoint `POST /price` درست کار می‌کند و قرارداد خروجی بالا را برمی‌گرداند.
 
 2. **قواعد Category 1 (hard) همیشه حفظ می‌شوند، فارغ از خروجی LLM:**
+   - `qty > 0` همیشه — Decision باید هر line item با qty نامعتبر (صفر یا منفی) را
+     با خطای صریح **رد کند**، نه silently drop یا محاسبهٔ نادرست. این دقیقاً همان
+     نوع سوراخی است که Perception را غیرقابل‌اعتماد می‌کند و Decision باید محافظ باشد.
    - `unit_price ≥ 0` همیشه.
-   - `discount ≤ subtotal_base` همیشه (نکته: تخفیف non-stacking است — اگر چند تخفیف هم‌زمان صدق کنند، فقط بیشترین مقدار اعمال می‌شود).
+   - `discount ≤ base` همیشه (نکته: تخفیف non-stacking است — اگر چند تخفیف هم‌زمان
+     صدق کنند، فقط بیشترین مقدار اعمال می‌شود).
    - **مالیات روی مبلغ بعد از تخفیف، نه base خام** (VAT ایران روی مبلغ نهایی پرداختی):
        ```
-       base           = Σ(unit_price × qty)
+       base           = Σ(unit_price × qty)              // فقط روی qty > 0
        discount       = max(applicable_discounts)        // non-stacking, مقدار مطلق پولی
        subtotal       = base − discount
        tax            = subtotal × rate                  // rate فیکس: 0.09
        total          = subtotal + tax
        ```
-   - توجه: `discount` در این فرمول **مقدار مطلق پولی** است، نه نرخ. تبدیل نرخ→مبلغ (`discount_amount = base × discount_rate`) باید در لایهٔ Decision رخ دهد، نه بیرون از آن.
-   - حتی اگر Perception خروجی نامعتبر برگرداند (مثلاً qty منفی)، Decision آن را رد می‌کند، نه اینکه قیمت منفی یا تخفیف بیش از ۱۰۰٪ تولید کند.
+   - توجه: `discount` در این فرمول **مقدار مطلق پولی** است، نه نرخ. تبدیل نرخ→مبلغ
+     (`discount_amount = base × discount_rate`) باید در لایهٔ Decision رخ دهد، نه بیرون از آن.
+   - حتی اگر Perception خروجی نامعتبر برگرداند، Decision آن را رد می‌کند، نه اینکه
+     قیمت منفی یا تخفیف بیش از ۱۰۰٪ تولید کند.
 
-3. **پوشش تست لایهٔ Decision ≥ ۸۰٪، با حداقل سه property-based test (Hypothesis):**
-   - (الف) non-negative price: برای هر ورودی تصادفی معتبر، `total ≥ 0`.
+3. **پوشش تست لایهٔ Decision ≥ ۸۰٪، با حداقل چهار property-based test (Hypothesis):**
+   - (الف) non-negative total: برای هر ورودی تصادفی معتبر، `total ≥ 0`.
+   - (الف′) **non-negative unit_price مستقیم:** `unit_price ≥ 0` به‌صورت مستقیم روی
+     هر line item تست شود، نه فقط از طریق اثر نهایی‌اش روی `total` — تا اگر
+     محاسبه‌ای خراب شد، تست دقیق‌تر بگوید کجا. (این یک invariant مستقیم است،
+     نه ترکیبی.)
    - (ب) discount ≤ base: برای هر ترکیب تخفیف، `discount ≤ base`.
-   - (ج) tax قطعی: برای هر ورودی، `tax = subtotal × 0.09` دقیقاً.
+   - (ج) tax قطعی: برای هر ورودی معتبر، `tax = subtotal × 0.09` دقیقاً.
+   - (د) **رد qty نامعتبر:** برای هر ورودی با qty ≤ 0، Decision خطای صریح برمی‌گرداند،
+     نه یک نتیجهٔ محاسبه‌شده. (این property ممکن است نیاز به strategy خاص Hypothesis
+     داشته باشد — ورودی‌های نامعتبر، نه معتبر.)
 
 4. **Perception و Generation از طریق adapter قابل‌تعویض‌اند:** یک `DummyLLM` قابل‌تزریق برای تست بدون کلید API واقعی. وقتی کلید DeepSeek در `.env` نباشد، adapter به‌صورت خودکار به `DummyLLM` عوض می‌شود و یک هشدار صادر می‌شود (نه خطا).
 
