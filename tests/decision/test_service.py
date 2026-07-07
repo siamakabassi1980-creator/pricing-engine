@@ -96,3 +96,26 @@ def test_service_zero_discount_for_regular_normal() -> None:
     assert result.status == "priced"
     assert result.discount == Decimal("0")
     assert result.discount_reason == ""
+
+
+def test_service_rejects_empty_items_not_silent_zero_order() -> None:
+    """Empty items (e.g. from unparseable LLM response) -> rejected.
+
+    INTEGRATION test for the silent-drop gap closed in T1.5: when Perception
+    returns empty items (because the LLM response was unparseable), the
+    Decision layer must reject with a clear reason — NOT produce a silent
+    'priced' 0-toman order.
+
+    Before the fix, this returned status='priced', total=0, which is the
+    anti-pattern. Now it must return status='rejected'.
+    """
+    request = PurchaseRequest(
+        items=[],
+        customer_tier="regular",
+        season="normal",
+    )
+    result = price(request, CATALOG, _settings())
+    assert result.status == "rejected"
+    assert result.rejection_reason is not None
+    assert "آیتم" in result.rejection_reason
+    assert result.total == Decimal("0")  # rejected result is zeroed

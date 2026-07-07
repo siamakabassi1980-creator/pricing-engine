@@ -21,6 +21,7 @@ from app.decision.models import (
 from app.decision.rules import (
     compute_base,
     compute_totals,
+    validate_items_nonempty,
     validate_prices,
     validate_qty,
 )
@@ -45,6 +46,9 @@ def price(
         status="rejected" with a Farsi rejection_reason. Never raises.
     """
     # Category 1 validation — reject the WHOLE request on any violation.
+    # Order matters: empty-items check first (cheapest, short-circuits).
+    if (reason := validate_items_nonempty(request.items)) is not None:
+        return PriceResult.rejected(reason)
     if (reason := validate_qty(request.items)) is not None:
         return PriceResult.rejected(reason)
     if (reason := validate_prices(request.items)) is not None:

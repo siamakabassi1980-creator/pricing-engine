@@ -10,6 +10,7 @@ from app.decision.rules import (
     compute_base,
     compute_tax,
     compute_totals,
+    validate_items_nonempty,
     validate_prices,
     validate_qty,
 )
@@ -24,10 +25,33 @@ def _item(product_id: str, qty: int, price: int | Decimal = 100) -> LineItemRequ
     )
 
 
+# --- validate_items_nonempty ---
+
+
+def test_validate_items_nonempty_accepts_nonempty() -> None:
+    """A list with at least one item passes."""
+    items = [_item("a", 1)]
+    assert validate_items_nonempty(items) is None
+
+
+def test_validate_items_nonempty_rejects_empty() -> None:
+    """An empty items list is rejected with a clear Farsi reason.
+
+    This closes the silent-drop gap where unparseable LLM output (empty
+    items from Perception) would otherwise produce a 'priced' 0-toman order.
+    """
+    reason = validate_items_nonempty([])
+    assert reason is not None
+    assert "آیتم" in reason
+
+
 # --- validate_qty ---
 
 
 def test_validate_qty_accepts_positive() -> None:
+    """qty > 0 passes validation."""
+    items = [_item("a", 1), _item("b", 10)]
+    assert validate_qty(items) is None
     """qty > 0 passes validation."""
     items = [_item("a", 1), _item("b", 10)]
     assert validate_qty(items) is None

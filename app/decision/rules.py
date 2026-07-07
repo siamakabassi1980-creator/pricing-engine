@@ -23,6 +23,22 @@ from app.decision.models import LineItemRequest
 TAX_RATE = Decimal("0.09")
 
 
+def validate_items_nonempty(items: list[LineItemRequest]) -> str | None:
+    """Return a Farsi rejection reason if items is empty, else None.
+
+    An empty items list means Perception failed to parse anything usable
+    from the LLM (or the request genuinely contained nothing). Either way,
+    pricing an empty cart as a 'successful 0-toman order' is a silent-drop
+    anti-pattern — the same class of bug we closed for qty in AC #2.
+
+    This check runs FIRST in the validation chain: it's the cheapest and
+    short-circuits the others.
+    """
+    if not items:
+        return "هیچ آیتم معتبری از درخواست استخراج نشد"
+    return None
+
+
 def validate_qty(items: list[LineItemRequest]) -> str | None:
     """Return a Farsi rejection reason if any qty is invalid, else None.
 
