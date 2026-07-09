@@ -18,7 +18,9 @@ select = [
     "UP",  # pyupgrade
     "SIM", # simplify
 ]
-ignore = []
+# B008 (Depends in default arg) is the standard FastAPI pattern.
+# See: https://fastapi.tiangolo.com/tutorial/dependencies/
+ignore = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

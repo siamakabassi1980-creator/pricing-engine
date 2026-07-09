@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
-from app.decision.models import LineItemRequest, PurchaseRequest
+from app.decision.models import LineItemRequest, PurchaseRequest, Season, Tier
 from app.perception.llm_adapter import LLMAdapter, parse_json_response
 from app.perception.prompts import build_parse_prompt
 
@@ -28,6 +28,8 @@ def parse_request(
     catalog: dict[str, str],
     catalog_prices: dict[str, Decimal],
     llm: LLMAdapter,
+    customer_tier: Tier = "regular",
+    season: Season = "normal",
 ) -> PurchaseRequest:
     """Parse a Farsi request into a PurchaseRequest.
 
@@ -37,6 +39,8 @@ def parse_request(
         catalog_prices: product_id -> unit_price. The PRICE IS ALWAYS TAKEN
             FROM HERE, never from the LLM. This is a security-critical rule.
         llm: The LLM adapter (DeepSeek in prod, DummyLLM in tests).
+        customer_tier: From request context (NOT from LLM). Default "regular".
+        season: From request context (NOT from LLM). Default "normal".
 
     Returns:
         PurchaseRequest with items. If parsing fails, items may be empty.
@@ -49,7 +53,7 @@ def parse_request(
         parsed = parse_json_response(raw)
     except ValueError:
         logger.warning("LLM returned unparseable response: %s", raw[:200])
-        return PurchaseRequest(items=[], customer_tier="regular", season="normal")
+        return PurchaseRequest(items=[], customer_tier=customer_tier, season=season)
 
     # Extract items. The LLM provides product_id and qty ONLY.
     raw_items = parsed.get("items", []) if isinstance(parsed, dict) else []
@@ -74,6 +78,6 @@ def parse_request(
             )
         )
 
-    # customer_tier and season are NOT parsed from the request text in MVP;
-    # they come from the request context (passed separately). Default here.
-    return PurchaseRequest(items=items, customer_tier="regular", season="normal")
+    # customer_tier and season come from the request context (passed in),
+    # NOT parsed from the request text by the LLM.
+    return PurchaseRequest(items=items, customer_tier=customer_tier, season=season)
