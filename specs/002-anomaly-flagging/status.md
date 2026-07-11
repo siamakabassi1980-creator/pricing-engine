@@ -46,3 +46,9 @@
 | tests/anomaly/test_models.py | ۱۳ | unit (model + service + fail-open) |
 | tests/api/test_price_endpoint.py (جدید) | ۲ | integration (AC8) |
 | **مجموع جدید** | **۲۵** | |
+
+## یادداشت Spec Drift — ۲۰۲۶-۰۷-۱۱
+`docs/ROADMAP.md` پس از پایان فیچر 002 به‌روزرسانی شد تا ردیف 002 را «done»
+نشان دهد (قبلاً به‌اشتباه «not-started» مانده بود). همچنین `005-inventory-check`
+که در swap فیچر 002→anomaly تصادفاً از لیست افتاده بود، دوباره اضافه شد.
+commit: `eaa2760` (اصلاح drift) + اصلاح بعدی (بازگشت inventory).

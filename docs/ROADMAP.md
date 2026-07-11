@@ -9,7 +9,7 @@
 ```
 001-pricing (MVP) ────┬──→ 002-anomaly-flagging (آزمایش تست منفی — قضاوت LLM)
                       │
-                      ├──→ 003-catalog-management (CRUD روی catalog)
+                      ├──→ 003-catalog-management (CRUD روی catalog) ──→ 005-inventory-check
                       │
                       └──→ 004-multi-currency (وابسته به 001: نرخ تبدیل)
 ```
@@ -22,6 +22,7 @@
 | 002 | anomaly-flagging | ✅ done | 001 | آزمایش تست منفی **موفق** — تفکیک deterministic/کیفی + ADR-0002؛ ۱۰۴ تست کل |
 | 003 | catalog-management | ⚪ not-started | 001 | **بعدی در صف** — CRUD روی کاتالوگ (الان seed ثابت) |
 | 004 | multi-currency | ⚪ not-started | 001 | نرخ تبدیل ارز |
+| 005 | inventory-check | ⚪ not-started | 001, 003 | اعتبارسنجی موجودی انبار (در swap 002→anomaly تصادفیًا از لیست افتاد؛ وابستگی واقعی‌اش به 003=catalog است، نه anomaly) |
 
 ## چرا 002 = anomaly-flagging (نه catalog-management)
 
