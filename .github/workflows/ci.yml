@@ -1,0 +1,45 @@
+# CI pipeline — second line of defense (per constitution).
+# Pre-commit is bypassable with --no-verify; CI is not.
+#
+# Status: done-with-caveat. This workflow is syntactically valid but has
+# NOT been verified against a real GitHub remote (the repo is local-only).
+# Once a remote is added, push and confirm all jobs pass before trusting CI.
+# Tracked in specs/001-pricing/status.md.
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (ruff format)
+        run: ruff format --check .
+
+      - name: Type check (mypy)
+        run: mypy --strict app/
+
+      - name: Test with coverage
+        run: pytest tests/ --cov=app/decision --cov-fail-under=80
+
+      - name: Dependency audit
+        run: pip-audit -r requirements.txt
