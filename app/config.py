@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     default_seasonal_discount_rate: Decimal = Decimal("0.10")
     vip_customer_discount_rate: Decimal = Decimal("0.15")
 
+    # Category 2 — anomaly deterministic signal thresholds (feature 002).
+    anomaly_qty_threshold: int = 100
+    anomaly_base_threshold: Decimal = Decimal("10000000")
+
     @field_validator(
         "tax_rate",
         "default_seasonal_discount_rate",

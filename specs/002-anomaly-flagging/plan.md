@@ -54,11 +54,28 @@ tests/
     └── test_price_endpoint.py    # + assertion روی anomaly_status در response
 ```
 
-### محل زندگی سیگنال‌های deterministic (نکتهٔ plan)
+### محل زندگی سیگنال‌های deterministic (نکتهٔ plan — اصلاح‌شده)
 طبق خواستهٔ Claude، صریح: سیگنال‌های deterministic (مثل `qty > 100`، `base > 10M`)
 داخل **`app/decision/rules.py`** پیاده می‌شوند — کنار قوانین Category موجود.
 دلیل: آن‌ها هم deterministic هستند، هم قابل property testing، هم طبیعتاً
-متعلق به لایهٔ decision (نه یک لایهٔ LLM-based). پوشش تست آن‌ها به همان
+متعلق به لایهٔ decision (نه یک لایهٔ LLM-based).
+
+**تصمیم معماری ۱ (Claude):** این سیگنال‌ها صریح **Category ۲** اعلام می‌شوند
+(نه «Category ۱/۲» مبهم) — env-var configurable، مثل نرخ‌های تخفیف
+(`ANOMALY_QTY_THRESHOLD`, `ANOMALY_BASE_THRESHOLD` در `.env.example`). دلیل:
+این‌ها آستانه‌ی تجاری‌اند، نه invariant ریاضی مثل `qty > 0`.
+
+**تصمیم معماری ۲ (Claude):** تابعی که این سیگنال‌ها را می‌سنجد
+(`check_deterministic_signals(items, base, qty_threshold, base_threshold) -> list[str]`)
+کاملاً جدا از `price()` است و هرگز داخل مسیر اصلی Decision صدا زده نمی‌شود —
+فقط `app/anomaly/service.py` مستقیم آن را فراخوانی می‌کند. این از نقض معکوس
+قانون «Decision هرگز anomaly/LLM صدا نمی‌زند» جلوگیری می‌کند.
+
+**تصمیم معماری ۳ (Claude):** چون `rules.py` متعلق به فیچر 001 (done-with-caveat)
+دوباره برای فیچر 002 تغییر می‌کند، طبق قانون Spec Drift: یک خط در `status.md`
+فیچر 001 اضافه می‌شود که این فایل دوباره لمس شده. بعد از تغییر، کل
+`tests/decision/` و `tests/property/` (نه فقط تست‌های جدید فیچر 002) دوباره
+اجرا می‌شود تا مطمئن شویم ۵ property test و ۱۰۰٪ coverage فیچر 001 دست‌نخورده مانده.
 `--cov=app/decision` (که از قبل ۱۰۰٪ است) اضافه می‌شود و توسط همان AC coverage
 فیچر 001 پوشش داده می‌شوند — **نه** AC7 این فیچر.
 

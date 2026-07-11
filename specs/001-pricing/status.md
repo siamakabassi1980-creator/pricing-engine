@@ -27,6 +27,12 @@
 | AC7 | no-secret | ✅ (.env.example, detect-private-key hook) |
 | AC8 | زبان محتوا فارسی | ✅ |
 
+## Spec Drift یادداشت (فیچر 002)
+`app/decision/rules.py` دوباره برای فیچر 002 (anomaly-flagging) لمس شد — سیگنال‌های
+deterministic جدید (`check_deterministic_signals`) اضافه شد. طبق قانون Spec Drift:
+بعد از این تغییر، کل `tests/decision/` و `tests/property/` دوباره اجرا شد تا
+مطمئن شویم ۵ property test و ۱۰۰٪ coverage فیچر 001 دست‌نخورده مانده.
+
 ## کشف‌های این فاز (برای بازگشت به shared-kit)
 
 ۱. **قانون زبان سه‌محوری** — کشف شد که قانون قبلی («کد/مستندات») محور
