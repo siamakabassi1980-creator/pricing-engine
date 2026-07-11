@@ -28,11 +28,10 @@
 | AC8 | زبان محتوا فارسی | ✅ |
 
 ## Spec Drift یادداشت (فیچر 002)
-در فاز آماده‌سازی فیچر 002 (anomaly-flagging)، فایل مشترک `app/config.py` گسترش
-یافت (دو فیلد جدید: `anomaly_qty_threshold`, `anomaly_base_threshold`). `rules.py`
-هنوز دست‌نخورده است. وقتی `check_deterministic_signals()` در T0.1 نوشته شود،
-یادداشت واقعی Spec Drift + اجرای کامل `tests/decision/` و `tests/property/` اینجا
-به‌روزرسانی می‌شود.
+`app/decision/rules.py` در T0.1 فیچر 002 دوباره لمس شد — تابع جدید
+`check_deterministic_signals()` اضافه شد (Category 2، env-var configurable، جدا
+از `price()`). طبق قانون Spec Drift: کل `tests/decision/` و `tests/property/`
+دوباره اجرا شد — ۴۱ تست همگی pass، coverage همچنان ۱۰۰٪. فیچر 001 دست‌نخورده است.
 
 ## کشف‌های این فاز (برای بازگشت به shared-kit)
 

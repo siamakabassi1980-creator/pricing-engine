@@ -105,3 +105,49 @@ def compute_totals(
     tax = compute_tax(subtotal)
     total = subtotal + tax
     return subtotal, tax, total
+
+
+# --- Category 2 deterministic anomaly signals (feature 002) ---
+#
+# These are SEPARATE from the main Decision pricing path. They are NEVER
+# called inside price() — only app/anomaly/service.py calls them directly.
+# This prevents a reverse violation of "Decision never calls anomaly/LLM".
+#
+# Category 2 (not Category 1): thresholds are business-configurable via
+# env vars (ANOMALY_QTY_THRESHOLD, ANOMALY_BASE_THRESHOLD), unlike
+# qty > 0 which is a mathematical invariant.
+
+
+def check_deterministic_signals(
+    items: list[LineItemRequest],
+    base: Decimal,
+    qty_threshold: int = 100,
+    base_threshold: Decimal = Decimal("10000000"),
+) -> list[str]:
+    """Check deterministic anomaly signals (Category 2, tunable thresholds).
+
+    Returns a list of Farsi signal descriptions for flagged conditions.
+    Empty list means no deterministic anomaly signals.
+
+    This function is PURE — no LLM, no IO, fully property-testable.
+    It does NOT modify the price or reject the request; it only produces
+    informational flags for the anomaly layer.
+
+    Args:
+        items: The line items (must be validated qty > 0, price >= 0).
+        base: The computed base total.
+        qty_threshold: Flag any item with qty > this (default 100).
+        base_threshold: Flag if base exceeds this (default 10M toman).
+    """
+    signals: list[str] = []
+
+    for item in items:
+        if item.qty > qty_threshold:
+            signals.append(
+                f"تعداد غیرعادی برای {item.product_id}: qty={item.qty} (آستانه: {qty_threshold})"
+            )
+
+    if base > base_threshold:
+        signals.append(f"مبلغ کل غیرعادی: base={base} (آستانه: {base_threshold})")
+
+    return signals
