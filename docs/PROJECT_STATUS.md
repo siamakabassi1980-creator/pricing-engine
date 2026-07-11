@@ -1,46 +1,42 @@
 # وضعیت پروژه — موتور قیمت‌گذاری پویا
 
-> آخرین به‌روزرسانی: ۲۰۲۶-۰۷-۰۷ (پایان فاز Specify/Clarify + بستر آماده)
+> آخرین به‌روزرسانی: ۲۰۲۶-۰۷-۱۱ (پایان فاز ۴ — فیچر ۰۰۱ done)
 
 ## خلاصهٔ فعلی
-پروژه در فاز Specify/Clarify است. بستر (governance, pre-commit, venv) آماده و
-تأیید شده. مرحلهٔ بعدی: `/speckit.plan`.
+فیچر 001-pricing کامل شد (با یک caveat: CI workflow ساخته شد ولی تأیید نشده چون
+remote گیت‌هاب فعلاً موجود نیست). ۷۹ تست pass، پوشش Decision ۱۰۰٪.
 
 ## فیچرها
-| ID | نام | وضعیت | فاز |
+| ID | نام | وضعیت | توضیح |
 |---|---|---|---|
-| 001 | pricing (MVP) | 🔵 in-progress | specify + clarify done، در انتظار plan |
+| 001 | pricing (MVP) | ✅ done-with-caveat | CI workflow بدون remote تأیید نشده |
+| 002 | catalog-management | ⚪ not-started | وابسته به 001 |
+| 003 | multi-currency | ⚪ not-started | وابسته به 001 |
+| 004 | inventory-check | ⚪ not-started | وابسته به 001, 002 |
+
+## آمار نهایی فیچر 001
+- **۷۹ تست** pass (شامل ۵ property-based test با Hypothesis)
+- **پوشش Decision: ۱۰۰٪** (الزام: ≥۸۰٪)
+- **mypy --strict: صفر خطا** روی ۲۵ فایل
+- **ruff check: صفر خطا** روی کل پروژه
+- **pip-audit: صفر آسیب‌پذیری**
+- **۵ فاز کامل**: Foundation → Decision → Perception → Generation → API
 
 ## بستر پروژه (Platform)
-| مؤلفه | وضعیت | یادداشت |
-|---|---|---|
-| Git repo | ✅ initialized | commit پایه + commit اصلاح qty |
-| AGENTS.md | ✅ نازک (از shared-kit) | فقط ارجاع به constitution |
-| constitution.md | ✅ نوشته شده | معماری سه‌لایه + حاکمیت کیت |
-| .specify/ (Spec Kit) | ✅ نصب | `specify init` واقعی اجرا شد |
-| pre-commit | ✅ نصب + تأیید | تست خطای عمدی رد شد (۴ خطا) |
-| venv | ✅ ساخته شد | python 3.12.8 |
-| CLAUDE.md | ✅ پل @AGENTS.md | Active Technologies دستی (رصد برای تداخل با plan) |
-| .env.example | ✅ | کلید DeepSeek placeholder |
-| LLM key | ✅ در `.env` | (نه در repo) |
+| مؤلفه | وضعیت |
+|---|---|
+| Git repo | ✅ |
+| AGENTS.md (نازک) | ✅ |
+| constitution.md (سه‌لایه) | ✅ |
+| .specify/ (Spec Kit) | ✅ |
+| pre-commit (نصب + تأیید) | ✅ |
+| venv (python 3.12) | ✅ |
+| ADR-0001 (LLM adapter) | ✅ |
+| CI workflow | ⚠️ done-with-caveat |
 
 ## کشف‌های متدولوژیکی (برای بازگشت به shared-kit)
-
-> هر کشف واقعی در طول این پروژه که قانون/الگویی جدید لو می‌دهد، اینجا جمع
-> می‌شود. در پایان فیچر، این موارد به `shared-kit/constitution-template.md`
-> بازمی‌گردند.
-
-- (تا الان) قانون زبان سه‌محوری (کد/مستندات/محتوای کاربر) — از دورهای بازبینی
-  SDD کشف شد، در constitution این پروژه اعمال شده، باید به shared-kit برگردد. ✅
-- قانون تصمیم «پروژهٔ جدید در برابر فیچر جدید» — اعمال شد در AGENTS.md. ✅
-- (در انتظار) رفتار سیستم وقتی property-based testing نامناسب است (فیچر ۰۰۲).
-
-## معیارهای پذیرش فیچر ۰۰۱ و وضعیت
-- AC1 (endpoint): ⚪ pending implement
-- AC2 (Category 1 hard rules: qty>0, price≥0, discount≤base, post-discount tax): ⚪ pending
-- AC3 (coverage ≥۸۰٪ + ۴ property tests): ⚪ pending
-- AC4 (LLM adapter + DummyLLM): ⚪ pending
-- AC5 (ADR for adapter): ⚪ pending
-- AC6 (rollback migration): ⚪ pending
-- AC7 (no-secret): ✅ بستر (.env.example, detect-private-key hook)
-- AC8 (زبان محتوا فارسی): ⚪ pending implement
+۱. قانون زبان سه‌محوری (✅ اعمال شد)
+۲. قانون empty-items / boundary guards
+۳. قانون گزارش‌دهی: تأیید عددی
+۴. دستورالعمل specify init برای ZCode
+۵. قانون پروژهٔ جدید در برابر فیچر جدید
