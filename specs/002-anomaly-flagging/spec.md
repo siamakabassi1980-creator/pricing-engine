@@ -8,60 +8,79 @@
 «قانون ۸۰٪ coverage + PBT اینجا صدق نمی‌کند» و مؤدبانه در ADR مستند کند، یا
 مصنوعی به‌زور property test تولید می‌کند؟
 
-**دامنهٔ انتخاب‌شده — پرچم‌گذاری درخواست‌های مشکوک:** یک فیچر که با قضاوت LLM
-تشخیص می‌دهد آیا یک درخواست قیمت‌گذاری خارج از الگوی عادی است (حجم غیرمعمول،
-ترکیب عجیب محصولات، نشانه‌های تقلب) و برای بازبینی انسانی پرچم می‌خورد.
+**دامنهٔ انتخاب‌شده — پرچم‌گذاری درخواست‌های مشکوک:** یک لایهٔ جدا (`app/anomaly/`)
+که پس از Decision اجرا می‌شود. برای هر `PriceResult` با `status="priced"`،
+لایهٔ anomaly تصمیم می‌گیرد: آیا این درخواست مشکوک است؟ اگر بله،
+`anomaly_status="flagged"` و `anomaly_reason` به نتیجه اضافه می‌شود.
 
-این دامنه عمداً انتخاب شد چون:
-- **هیچ invariant ریاضی ندارد** — «مشکوک بودن» یک قضاوت کیفی است، نه رابطهٔ عددی.
-- **به‌طور طبیعی به pricing-engine متصل است** — نه مصنوعی.
-- **PBT در آن وسوسه‌انگیز ولی غلط است** — یک نفر ممکنه اشتباهاً فکر کنه باید
-  invariant بنویسه برای «flagged ⊆ all_requests» یا چیزهای بی‌معنی مشابه.
+## تفکیک حیاتی: سیگنال‌های deterministic در برابر کیفی
+
+این تفکیک قلب آزمایش تست منفی است:
+
+| نوع سیگنال | مثال | مدل تست | کجا |
+|---|---|---|---|
+| **deterministic** | qty > ۱۰۰، مبلغ کل > ۱۰ میلیون | property test مستقل | قانون Category ۱/۲ معمولی |
+| **کیفی (LLM-only)** | ترکیب عجیب اقلام، لحن مشکوک، الگوی غیرعادی نسبت به رفتار مشتری | **معاف از PBT** (ADR-0002) | این فیچر |
+
+این تفکیک صادقانه‌تر است: نشون می‌دهد سیستم می‌تواند دقیق تشخیص دهد کدوم بخش
+feature نیاز به تست دارد و کدوم نه — نه اینکه کل feature را یکجا معاف کند.
 
 ## What
-یک لایهٔ جدید `anomaly/` که پس از Decision اجرا می‌شود. برای هر `PriceResult`
-با `status="priced"`، لایهٔ anomaly تصمیم می‌گیرد: آیا این درخواست مشکوک است؟
-اگر بله، `anomaly_flag=True` و `anomaly_reason` به نتیجه اضافه می‌شود و درخواست
-برای بازبینی انسانی صف می‌شود.
+یک لایهٔ جدید `app/anomaly/` که **پس از Decision و مستقل از آن** اجرا می‌شود.
+`PriceResult` دست‌نخورده می‌ماند (نقض نمی‌شود قانون «Decision هرگز LLM صدا
+نمی‌زند»).
 
 ### ورودی
 ```
-PriceResult (از فیچر 001، status="priced")
-+ درخواست اصلی (request_text برای تحلیل LLM)
+PriceResult (از فیچر 001، status="priced") — فقط خوانده می‌شود
++ request_text (برای تحلیل کیفی توسط LLM)
 ```
 
 ### خروجی
 ```
-PriceResult با دو فیلد اضافه:
-  anomaly_flag: bool
-  anomaly_reason: str | None  # فقط اگر flagged
+AnomalyResult (ساختار جدا، نه فیلد در PriceResult):
+  anomaly_status: Literal["checked_clean", "checked_flagged", "check_skipped"]
+  anomaly_reason: str | None  # فقط اگر checked_flagged
 ```
 
-## Acceptance Criteria
-1. لایهٔ anomaly پس از Decision و پیش از Generation اجرا می‌شود.
+سه حالت (نه bool):
+- `checked_clean`: LLM بررسی کرد، مشکوک نبود.
+- `checked_flagged`: LLM بررسی کرد، مشکوک تشخیص داده شد.
+- `check_skipped`: LLM در دسترس نبود — **نه False** (الگوی done-with-caveat).
 
-2. **ADR-0002** ثبت می‌شود: چرا قانون ۸۰٪ coverage + PBT برای لایهٔ anomaly
-   صدق نمی‌کند. این خودش معیار پذیرش است — اثبات اینکه سیستم می‌تواند قانون را
-   صریحاً معاف کند، نه بی‌صدا نادیده بگیرد.
+فقط در لایهٔ API (schema پاسخ HTTP) با `PriceResult` ترکیب می‌شود.
+
+## Acceptance Criteria
+1. لایهٔ anomaly یک ماژول جدا (`app/anomaly/`) است که پس از Decision و پیش از
+   Generation اجرا می‌شود. **`PriceResult` دست‌نخورده می‌ماند** — هیچ فیلدی از
+   آن توسط anomaly پر نمی‌شود (نقض قانون «Decision هرگز LLM صدا نمی‌زند»).
+
+2. **ADR-0002** ثبت می‌شود: چرا قانون ۸۰٪ coverage + PBT فقط برای **بخش کیفی
+   (LLM-only)** لایهٔ anomaly صدق نمی‌کند، نه کل لایه. سیگنال‌های deterministic
+   (مثل qty > ۱۰۰) به‌صورت قانون Category ۱/۲ مستقل با property test خودشان
+   پیاده می‌شوند.
 
 3. لایهٔ anomaly با DummyLLM تست می‌شود (نه DeepSeek واقعی) — همان الگوی adapter.
 
-4. Anomaly detection منطق دترمینیستیک **ندارد** — یعنی هیچ تابع `is_anomalous()
-   -> bool` با قواعد hard وجود ندارد. تشخیص کاملاً از LLM می‌آید.
+4. بخش تشخیص آنومالی **کاملاً LLM-only** است — هیچ تابع `is_anomalous() -> bool`
+   با قواعد hard در لایهٔ anomaly وجود ندارد. سیگنال‌های deterministic به قانون
+   جدا منتقل می‌شوند (AC2).
 
 5. اگر LLM در دسترس نباشد، لایهٔ anomaly به‌صورت **fail-open** عمل می‌کند:
-   `anomaly_flag=False` (نه fail-closed). دلیل: ترجیح می‌دهیم یک درخواست مشکوک
-   را از دست بدهیم تا اینکه کل سیستم را متوقف کنیم.
+   `anomaly_status="check_skipped"` (نه False). این فرق «چک شد، تمیز بود» با
+   «چک نشد» را حفظ می‌کند.
 
-6. **هیچ property-based test نوشته نشود** برای لایهٔ anomaly. این صریح و عمدی است
-   (نقطهٔ کلیدی آزمایش تست منفی).
+6. **هیچ property-based test برای بخش کیفی (LLM-only) نوشته نشود** — صریح و عمدی
+   (نقطهٔ کلیدی آزمایش تست منفی). ولی property test برای سیگنال‌های
+   deterministic (قوانین جدا) نوشته می‌شود.
 
-7. پوشش تست حداقل ۸۰٪ روی **کد دترمینیستیک** لایهٔ anomaly (نه کل لایه) — یعنی
-   orchestration, fallback, fail-open logic. بخش LLM-only باDummyLLM تست می‌شود
-   ولی نه با invariant.
+7. پوشش تست حداقل ۸۰٪ روی **کد دترمینیستیک** لایهٔ anomaly (orchestration,
+   fallback، fail-open logic) — نه بخش LLM-only.
 
-8. Integration با endpoint: POST /price باید `anomaly_flag` و `anomaly_reason` را
-   در response برگرداند.
+8. Integration با endpoint: POST /price باید `anomaly_status` و `anomaly_reason`
+   را در response برگرداند. **نه در invoice_text** (متن مشتری) — فقط در پاسخ
+   داخلی API/لاگ. کانال اطلاع‌رسانی به انسان (پنل ادمین، notification) خارج از
+   scope این فیچر است.
 
 ## Out of Scope
 - صف بازبینی انسانی (dashboard، notification) — فقط flag گذاشته می‌شود.
@@ -69,18 +88,10 @@ PriceResult با دو فیلد اضافه:
 - مدل ML محلی برای anomaly detection.
 - مسدودسازی درخواست‌های مشکوک (فقط flag، نه block).
 - اعمال anomaly flag روی قیمت (قیمت تغییر نمی‌کند).
+- ذکر anomaly flag در invoice_text (مشتری) — فقط در پاسخ داخلی API.
 
-## پرسش‌های Clarify — منتظر پاسخ توسعه‌دهنده
-1. **دامنهٔ «مشکوک»:** چه نشانه‌هایی در prompt LLM داده شود؟ پیشنهاد: حجم
-   غیرمعمول (qty > 100)، ترکیب عجیب (مثلاً فقط گرون‌ترین محصول با تعداد زیاد)،
-   نشانه‌های تقلب (تکرار محصول یکسان با qty های متفاوت).
-
-2. **آیا anomaly_flag باید در PriceResult اصلی (از فیچر 001) اضافه شود، یا یک
-   ساختار جدا (AnomalyResult)؟** پیشنهاد: فیلدهای اختیاری در PriceResult برای
-   سادگی integration.
-
-3. **fail-open درست است؟** یعنی اگر LLM در دسترس نباشد، anomaly_flag=False
-   (نه True). تأیید می‌کنی؟
-
-4. **آیا Generation باید بداند anomaly_flag=True است؟** مثلاً در invoice_text
-   ذکر کند «این درخواست برای بازبینی پرچم خورده»؟ پیشنهاد: بله، یک یادداشت کوتاه.
+## پرسش‌های Clarify — بسته‌شده (با پاسخ توسعه‌دهنده)
+۱. سیگنال‌ها به دو دسته تقسیم شوند (deterministic در برابر کیفی). ✅
+۲. anomaly داخل PriceResult نرود (AnomalyResult جدا). ✅
+۳. سه‌حالته (checked_clean / checked_flagged / check_skipped). ✅
+۴. anomaly_flag نباید در invoice_text بیاید — فقط در پاسخ API. ✅
