@@ -7,25 +7,32 @@
 ## نمودار وابستگی فیچرها
 
 ```
-001-pricing (MVP) ────┬──→ 002-catalog-management (CRUD روی catalog)
+001-pricing (MVP) ────┬──→ 002-anomaly-flagging (آزمایش تست منفی — قضاوت LLM)
                       │
-                      ├──→ 003-multi-currency (وابسته به 001: نرخ تبدیل)
+                      ├──→ 003-catalog-management (CRUD روی catalog)
                       │
-                      └──→ 004-inventory-check (وابسته به 001 و 002)
+                      └──→ 004-multi-currency (وابسته به 001: نرخ تبدیل)
 ```
 
 ## وضعیت فیچرها
 
 | ID | نام | وضعیت | پیش‌نیازها | توضیح |
 |---|---|---|---|---|
-| 001 | pricing (MVP) | 🔵 in-progress (specify/clarify done) | — | هستهٔ سه‌لایه |
-| 002 | catalog-management | ⚪ not-started | 001 | CRUD روی کاتالوگ (الان seed ثابت) |
-| 003 | multi-currency | ⚪ not-started | 001 | نرخ تبدیل ارز |
-| 004 | inventory-check | ⚪ not-started | 001, 002 | اعتبارسنجی موجودی انبار |
+| 001 | pricing (MVP) | ✅ done-with-caveat (CI) | — | هستهٔ سه‌لایه، ۷۹ تست، ۱۰۰٪ coverage |
+| 002 | anomaly-flagging | ⚪ not-started | 001 | **آزمایش تست منفی**: قضاوت LLM، بدون invariant ریاضی |
+| 003 | catalog-management | ⚪ not-started | 001 | CRUD روی کاتالوگ (الان seed ثابت) |
+| 004 | multi-currency | ⚪ not-started | 001 | نرخ تبدیل ارز |
 
-## قانون آزمایش متدولوژیکی (فیچر ۰۰۲ عمداً نامناسب برای property-based)
+## چرا 002 = anomaly-flagging (نه catalog-management)
 
-یادداشت از نقدهای بازبینی SDD: فیچر ۰۰۳ (یا ۰۰۲) باید عمداً دامنه‌ای باشد که
-property-based testing در آن **نامناسب** است (مثلاً logic classification طبقه‌بندی
-LLM-only)، تا رفتار سیستم «کشف عدم‌تطابق و صرف‌نظر مؤدبانه + ADR» هم آزمایش شود،
-نه فقط «اجرای درست قانون در بهترین حالت».
+طبق تعهد آزمایش تست منفی (ثبت‌شده در فاز ۱)، فیچر ۰۰۲ باید عمداً دامنه‌ای باشد که
+property-based testing در آن **نامناسب** است — تا رفتار «کشف عدم‌تطابق و صرف‌نظر
+مؤدبانه + ADR» آزمایش شود، نه فقط «اجرای درست قانون در بهترین حالت».
+
+**پرچم‌گذاری درخواست‌های مشکوک/غیرعادی** این ویژگی‌ها را دارد:
+- «مشکوک بودن» یک قضاوت کیفی است، نه یک رابطهٔ عددی مثل `price ≥ 0`.
+- هیچ invariant ریاضی ندارد — دقیقاً دامنه‌ای که PBT در آن وسوسه‌انگیز ولی غلط است.
+- به‌طور طبیعی به pricing-engine متصل است (نه مصنوعی).
+
+`catalog-management` (CRUD) قبلاً فیچر ۰۰۲ بود ولی CRUD دترمینیستیک ساده است —
+نه مناسب برای PBT، نه نامناسب؛ فقط بی‌ربط. به ۰۰۳ منتقل شد.
