@@ -172,3 +172,63 @@ def test_price_endpoint_with_discount_special_tier(
     assert Decimal(data["subtotal"]) == Decimal("255000")
     assert Decimal(data["tax"]) == Decimal("22950")
     assert Decimal(data["total"]) == Decimal("277950")
+
+
+def test_price_endpoint_anomaly_status_in_response(
+    test_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Response must include anomaly_status (AC8)."""
+    from app.api import routes
+
+    dummy = DummyLLM(
+        responses={
+            "parse": '{"items": [{"product_id": "headphone-x", "qty": 2}]}',
+            "invoice": "پیش‌فاکتور",
+            "anomaly": '{"suspicious": false, "reason": ""}',
+        }
+    )
+    monkeypatch.setattr(routes, "build_llm_adapter", lambda settings: dummy)
+
+    response = test_client.post(
+        "/price",
+        json={
+            "request_text": "۲ هدفون",
+            "context": {"customer_tier": "regular", "season": "normal"},
+        },
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert "anomaly_status" in data
+    assert data["anomaly_status"] in ("checked_clean", "checked_flagged", "check_skipped")
+
+
+def test_price_endpoint_anomaly_not_in_invoice_text(
+    test_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """anomaly must NOT appear in invoice_text (AC8 — customer-facing)."""
+    from app.api import routes
+
+    dummy = DummyLLM(
+        responses={
+            "parse": '{"items": [{"product_id": "headphone-x", "qty": 200}]}',
+            "invoice": "پیش‌فاکتور برای ۲۰۰ عدد هدفون",
+            "anomaly": '{"suspicious": true, "reason": "حجم غیرعادی مشکوک"}',
+        }
+    )
+    monkeypatch.setattr(routes, "build_llm_adapter", lambda settings: dummy)
+
+    response = test_client.post(
+        "/price",
+        json={
+            "request_text": "۲۰۰ هدفون",
+            "context": {"customer_tier": "regular", "season": "normal"},
+        },
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    # Anomaly IS flagged in the API response.
+    assert data["anomaly_status"] == "checked_flagged"
+    assert data["anomaly_reason"] is not None
+    # But NOT in the invoice text (customer-facing).
+    assert "مشکوک" not in data["invoice_text"]
+    assert "anomaly" not in data["invoice_text"].lower()

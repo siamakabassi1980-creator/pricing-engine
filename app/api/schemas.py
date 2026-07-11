@@ -46,6 +46,9 @@ class PriceResponse(BaseModel):
     invoice_text: str
     status: str
     rejection_reason: str | None = None
+    # Feature 002: anomaly fields (in API response only, NOT in invoice_text).
+    anomaly_status: str = "check_skipped"
+    anomaly_reason: str | None = None
 
 
 class RejectionDetail(BaseModel):

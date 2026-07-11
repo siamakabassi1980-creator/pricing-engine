@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.anomaly.service import assess_anomaly
 from app.api.schemas import (
     LineItemOut,
     PriceRequest,
@@ -97,6 +98,16 @@ def price_endpoint(
             ).model_dump(),
         )
 
+    # --- Layer 2.5: Anomaly assessment (after Decision, before Generation) ---
+    anomaly_result = assess_anomaly(
+        price_result=result,
+        request_text=payload.request_text,
+        items=purchase_request.items,
+        llm=llm,
+        qty_threshold=settings.anomaly_qty_threshold,
+        base_threshold=settings.anomaly_base_threshold,
+    )
+
     # --- Layer 3: Generation (only for priced results) ---
     invoice_text = generate_invoice(result, llm)
 
@@ -122,4 +133,6 @@ def price_endpoint(
         invoice_text=invoice_text,
         status="priced",
         rejection_reason=None,
+        anomaly_status=anomaly_result.anomaly_status,
+        anomaly_reason=anomaly_result.anomaly_reason,
     )
