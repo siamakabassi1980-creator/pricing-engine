@@ -26,3 +26,42 @@ Accepted (۲۰۲۶-۰۷-۰۷)
 - **منفی:** یک لایهٔ غیرمستقیم اضافه می‌شود (کمی پیچیدگی).
 - **خنثی / ریسک:** اگر پروتکل LLM به سرعت تغییر کند (پیچیده‌تر از تک‌متن)، باید Protocol گسترش یابد.
 - **پیگیری لازم:** هنگام افزودن provider دوم، بازبینی شود که Protocol هنوز کافی است یا باید چندمتدی شود.
+
+## الحاقیهٔ امنیتی (۲۰۲۶-۰۷-۱۲) — سقوط بی‌صدا به DummyLLM ممنوع شد
+
+### زمینهٔ تغییر
+پیاده‌سازی اولیهٔ `build_llm_adapter` در نبود `DEEPSEEK_API_KEY`، بی‌صدا به
+`DummyLLM` سقوط می‌کرد — حتی در محیط تولید. این خطرناک بود: Perception ممکن
+بود ورودی کاملاً نامرتبط DummyLLM را به‌جای درخواست واقعی مشتری پردازش کند، یا
+Generation متن فاکتور ساختگی تولید کند — بدون هیچ crash یا سیگنال بیرونی. این
+دقیقاً همان الگوی «silent-fail به حالت ناامن» است.
+
+### تصمیم اصلاحی
+رفتار fallback با یک فلگ صریح opt-in دروازه‌بانی شد:
+
+```python
+def build_llm_adapter(settings: Settings) -> LLMAdapter:
+    if settings.deepseek_api_key:
+        return DeepSeekAdapter(api_key=settings.deepseek_api_key)
+    if settings.allow_dummy_fallback:
+        return DummyLLM()
+    raise RuntimeError("DEEPSEEK_API_KEY missing and dummy fallback not allowed")
+```
+
+- `allow_dummy_fallback` پیش‌فرض **False** است (safe-by-default).
+- تست‌ها و local dev صریحاً `True` تنظیم می‌کنند (dependency injection، نه
+  استنتاج از نام environment).
+- در تولید (پیش‌فرض False)، نبود کلید یعنی برنامه اصلاً بالا نمی‌آید —
+  `create_app()` validation را در startup (خارج از try/except دیتابیس) اجرا
+  می‌کند، نه اینکه منتظر اولین request بماند.
+
+### اصل کلی
+رفتار امن-پیش‌فرض هرگز نباید بر پایهٔ حدس‌زدن از متغیر محیطی باشد (مثلاً «اگر
+در CI هستیم، احتمالاً dummy OK است»). فلگ باید صریح باشد. این اصل به
+`shared-kit/constitution-template.md` (بخش حاکمیت کیفیت) هم اضافه شد.
+
+### تست‌های زنده
+- `test_build_llm_adapter_refuses_when_key_absent_and_fallback_disabled`:
+  False + بدون کلید → RuntimeError.
+- `test_build_llm_adapter_falls_back_to_dummy_when_key_absent`:
+  True + بدون کلید → DummyLLM (رفتار تست‌های فعلی حفظ شد).

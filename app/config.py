@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     # LLM provider.
     deepseek_api_key: str = ""
+    # Whether build_llm_adapter may fall back to DummyLLM when the key is
+    # missing. Defaults to False (safe): production refuses to start without
+    # a key. Tests and local dev set this to True explicitly. See ADR-0001.
+    allow_dummy_fallback: bool = False
 
     # Database URLs.
     database_url: str = "postgresql+psycopg://pricing:pricing@localhost:5432/pricing_engine"

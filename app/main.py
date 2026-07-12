@@ -14,6 +14,8 @@ from fastapi import FastAPI
 
 from app.api.catalog_routes import router as catalog_router
 from app.api.routes import router
+from app.config import get_settings
+from app.perception.llm_adapter import build_llm_adapter
 
 
 def create_app() -> FastAPI:
@@ -35,14 +37,20 @@ def create_app() -> FastAPI:
     # main.py is a feature-001 file; see specs/001-pricing/status.md drift note.
     app.include_router(catalog_router)
 
+    # Security gate (ADR-0001 addendum): validate LLM config at startup, not
+    # on first request. If no API key and dummy fallback is disabled (the
+    # safe default), refuse to start rather than silently serve fake output.
+    # This MUST be outside the DB try/except below — a missing key is a hard
+    # stop, not a recoverable DB-unavailability condition.
+    settings = get_settings()
+    build_llm_adapter(settings)  # raises RuntimeError if misconfigured
+
     # Create tables at startup (MVP convenience). Wrapped so a missing DB
     # does not crash import or test collection.
     try:
-        from app.config import get_settings
         from app.db.base import Base
         from app.db.session import create_app_engine
 
-        settings = get_settings()
         engine = create_app_engine(settings.database_url)
         Base.metadata.create_all(engine)
     except Exception:  # noqa: BLE001 — startup resilience

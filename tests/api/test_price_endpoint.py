@@ -27,12 +27,21 @@ from app.perception.llm_adapter import DummyLLM
 
 
 @pytest.fixture
-def test_client() -> Generator[TestClient, None, None]:
+def test_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[TestClient, None, None]:
     """Test client with in-memory SQLite + seeded catalog + DummyLLM.
 
     The DummyLLM returns a scripted parse response so Perception produces
     a valid PurchaseRequest without calling the real DeepSeek API.
     """
+
+    # allow_dummy_fallback=True so create_app()'s startup LLM gate passes
+    # (tests have no real DeepSeek key). See ADR-0001 security addendum.
+    def _test_settings() -> Settings:
+        return Settings(_env_file=None, allow_dummy_fallback=True)  # type: ignore[call-arg]
+
+    monkeypatch.setattr("app.main.get_settings", _test_settings)
     app = create_app()
 
     # StaticPool so the in-memory SQLite DB persists across the multiple
@@ -61,7 +70,7 @@ def test_client() -> Generator[TestClient, None, None]:
 
     # Override settings (no real API key needed).
     def _get_test_settings() -> Settings:
-        return Settings(_env_file=None)  # type: ignore[call-arg]  # pydantic private
+        return Settings(_env_file=None, allow_dummy_fallback=True)  # type: ignore[call-arg]
 
     app.dependency_overrides[get_db_session] = _get_test_session
     app.dependency_overrides[get_settings] = _get_test_settings

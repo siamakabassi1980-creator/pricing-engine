@@ -65,14 +65,30 @@ def test_build_llm_adapter_returns_deepseek_when_key_present(
 def test_build_llm_adapter_falls_back_to_dummy_when_key_absent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Factory returns DummyLLM (with warning) when key is missing.
+    """Factory returns DummyLLM when key is missing AND fallback is allowed.
 
-    This is the done-with-caveat pattern: app never crashes on missing config.
+    Explicit opt-in via allow_dummy_fallback (ADR-0001 security addendum).
     """
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
-    settings = Settings(_env_file=None)  # type: ignore[call-arg]  # pydantic private
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None, allow_dummy_fallback=True
+    )
     adapter = build_llm_adapter(settings)
     assert isinstance(adapter, DummyLLM)
+
+
+def test_build_llm_adapter_refuses_when_key_absent_and_fallback_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No key + allow_dummy_fallback=False (the safe default) -> RuntimeError.
+
+    This is the production-safe path: refuse to start rather than silently
+    serve fake LLM output. See ADR-0001 security addendum.
+    """
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    settings = Settings(_env_file=None, allow_dummy_fallback=False)  # type: ignore[call-arg]
+    with pytest.raises(RuntimeError, match="refusing to start"):
+        build_llm_adapter(settings)
 
 
 # --- parse_json_response ---

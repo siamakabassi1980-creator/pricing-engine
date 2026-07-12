@@ -21,8 +21,19 @@ from app.main import create_app
 
 
 @pytest.fixture
-def client() -> Generator[TestClient, None, None]:
+def client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[TestClient, None, None]:
     """Test client with an empty in-memory SQLite DB."""
+    # allow_dummy_fallback=True so create_app()'s startup LLM gate passes,
+    # even though catalog endpoints never call the LLM (the gate runs for
+    # the whole app at startup). See ADR-0001 security addendum.
+    from app.config import Settings
+
+    def _test_settings() -> Settings:
+        return Settings(_env_file=None, allow_dummy_fallback=True)  # type: ignore[call-arg]
+
+    monkeypatch.setattr("app.main.get_settings", _test_settings)
     app = create_app()
     engine = create_engine(
         "sqlite://",

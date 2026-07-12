@@ -97,14 +97,19 @@ class DummyLLM:
 def build_llm_adapter(settings: Settings) -> LLMAdapter:
     """Factory: return DeepSeekAdapter if API key present, else DummyLLM.
 
-    This is the single point where the provider choice is made. If the key
-    is missing, we log a warning and fall back to DummyLLM — so the app
-    never crashes on missing config (done-with-caveat pattern).
+    This is the single point where the provider choice is made. Whether a
+    DummyLLM fallback is allowed at all is controlled by the explicit
+    `allow_dummy_fallback` flag on settings (default False — see ADR-0001
+    security addendum). When the key is missing AND fallback is disabled,
+    this raises RuntimeError so the app fails to start rather than silently
+    serving fake LLM output in production.
     """
     if settings.deepseek_api_key:
         return DeepSeekAdapter(api_key=settings.deepseek_api_key)
-    logger.warning("DEEPSEEK_API_KEY not set — falling back to DummyLLM")
-    return DummyLLM()
+    if settings.allow_dummy_fallback:
+        logger.warning("DEEPSEEK_API_KEY not set — falling back to DummyLLM")
+        return DummyLLM()
+    raise RuntimeError("DEEPSEEK_API_KEY missing and dummy fallback disabled — refusing to start")
 
 
 def parse_json_response(raw: str) -> object:
