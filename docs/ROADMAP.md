@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | 001 | pricing (MVP) | ✅ done-with-caveat (CI) | — | هستهٔ سه‌لایه، ۷۹ تست، ۱۰۰٪ coverage |
 | 002 | anomaly-flagging | ✅ done | 001 | آزمایش تست منفی **موفق** — تفکیک deterministic/کیفی + ADR-0002؛ ۱۰۴ تست کل |
-| 003 | catalog-management | ⚪ not-started | 001 | **بعدی در صف** — CRUD روی کاتالوگ (الان seed ثابت) |
+| 003 | catalog-management | ✅ done | 001 | پنج endpoint CRUD، ADR-0003 (no-auth)؛ ۱۶۳ تست کل |
 | 004 | multi-currency | ⚪ not-started | 001 | نرخ تبدیل ارز |
 | 005 | inventory-check | ⚪ not-started | 001, 003 | اعتبارسنجی موجودی انبار (در swap 002→anomaly تصادفیًا از لیست افتاد؛ وابستگی واقعی‌اش به 003=catalog است، نه anomaly) |
 
