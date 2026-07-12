@@ -9,6 +9,10 @@
 - [ ] `docs/decisions/ADR-0003-no-auth-mvp-risk.md` نوشته شود (با الگوی TEMPLATE.md).
 - [ ] Context، Decision، Consequences (ریسک شناخته‌شده)، و شرط رفع
       (چه وقتی auth باید برگردد: وقتی API به شبکهٔ خارج از trusted-zone برسد).
+- [ ] **محدودیت اضافی — restore-on-reseed:** چون `seed_database()` با `SELECT`
+      چک می‌کند، حذف یک محصول seed‌شده با DELETE، بعد از restart/دوباره-seed
+      دوباره ساخته می‌شود. این صریح مستند شود: DELETE یک محصول seed‌شده فقط
+      تا next-reseed دوام دارد. (تست آن در T3.1.)
 - [ ] commit: `docs(catalog): ADR-0003 — no-auth as known risk in MVP`
 
 ### T0.2 — Pydantic schemas + اعتبارسنجی Category 1
@@ -18,8 +22,15 @@
       - `unit_price ≥ 0` (422).
       - `unit_price` با ≤ ۲ رقم اعشار (422) — تصمیم plan.
       - `name_fa` غیرخالی.
-      - `id` slug الگو (حروف/عدد/خط‌تیره).
-- [ ] تست واحد روی schemas (هر خطای اعتبارسنجی).
+      - `id` slug با pattern دقیق `^[a-z0-9]+(-[a-z0-9]+)*$` (حروف کوچک انگلیسی،
+        عدد، خط‌تیره بین بخش‌ها؛ بدون خط‌تیره در ابتدا/انتها یا دوخط‌تیره پشت‌سرهم).
+- [ ] یادداشت یک‌خطی دربارهٔ race condition روی PUT هم‌زمان: «برای MVP نادیده
+      گرفته می‌شود چون (الف) auth نیست و فرض single-operator از شبکهٔ داخلی است،
+      (ب) last-write-wins در سطح DB (SQLite/PostgreSQL row lock) رفتار مشخصی دارد.
+      اگر multi-operator لازم شد، optimistic locking (مثلاً version column) باید
+      در فیچر جدا اضافه شود — schema change، نیاز به ADR.» این یادداشت در
+      `schemas.py` به‌صورت کامنت فنی انگلیسی نوشته شود.
+- [ ] تست واحد روی schemas (هر خطای اعتبارسنجی، شامل slug نامعتبر).
 - [ ] Linter + mypy صفر.
 - [ ] commit: `feat(catalog): add Pydantic schemas with Category 1 validation`
 
@@ -50,6 +61,12 @@
       - DELETE `/products/{id}` → 204 | 404.
 - [ ] نگاشت خطای مفهومی → HTTP status (404، 409، 422).
 - [ ] ثبت router در `app/main.py` (`app.include_router(catalog_router)`).
+- [ ] **Spec Drift (طبق قانون constitution):** چون `main.py` فایل فیچر 001 است،
+      یک یادداشت drift به `specs/001-pricing/status.md` اضافه شود که `main.py`
+      در فیچر 003-T2.1 برای `include_router(catalog_router)` دوباره لمس شد.
+- [ ] **بازگشت تست:** کل `tests/api/test_price_endpoint.py` (هر ۶ تست) دوباره
+      اجرا شود و pass شود — تا مطمئن شویم اضافه‌کردن router دوم به `create_app`
+      چیزی را در مسیر قیمت‌گذاری نشکسته.
 - [ ] Linter + mypy صفر.
 - [ ] commit: `feat(api): add five catalog CRUD endpoints (T2.1)`
 
@@ -68,12 +85,16 @@
 
 ## فاز ۳ — Quality gates + مستندسازی
 
-### T3.1 — تست نهایی + coverage + seed idempotency
+### T3.1 — تست نهایی + coverage + seed idempotency + restore-on-reseed
 - [ ] اجرای pytest روی کل پروژه — همگی pass.
 - [ ] ruff check . — صفر.
 - [ ] mypy --strict app/ — صفر.
 - [ ] coverage روی `app/catalog/service.py` ≥ ۸۰٪.
 - [ ] `tests/test_seed.py` دوباره اجرا شود → idempotency در حضور CRUD سالم (AC5).
+- [ ] **تست restore-on-reseed (چک ۱′):** یک محصول seed‌شده را با DELETE حذف کن،
+      سپس `seed_database()` را دوباره اجرا کن، و assert کن که محصول دوباره موجود
+      است. این، رفتار شناخته‌شدهٔ «seed، محصولات حذف‌شده را بعد از restart
+      بازمی‌گرداند» را ثابت می‌کند (مستند در ADR-0003).
 - [ ] pip-audit — صفر آسیب‌پذیری.
 - [ ] commit: `test(catalog): full suite passes, coverage + seed verified (T3.1)`
 
