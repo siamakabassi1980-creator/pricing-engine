@@ -43,7 +43,10 @@ asyncio_mode = "auto"
 addopts = "-ra --strict-markers"
 
 [tool.coverage.run]
-source = ["app/decision"]
+# Critical deterministic logic modules (per constitution: >=80% required).
+# LLM layers (perception, generation) and thin API routing are excluded —
+# they are non-deterministic or dispatch-only.
+source = ["app/decision", "app/anomaly", "app/catalog"]
 branch = true
 
 [tool.coverage.report]

@@ -58,7 +58,10 @@ def test_create_returns_201(client: TestClient) -> None:
     data = _create(client, id_="headphone-x", price="150000")
     assert data["id"] == "headphone-x"
     assert data["name_fa"] == "نام"
-    # Compare as Decimal: the DB column is Numeric(12,2) so "150000" -> "150000.00".
+    # Compare as Decimal, never as string: the Numeric(12,2) column returns
+    # "150000.00" for input "150000". Same family of bug as the
+    # Decimal('0.15')==0.15 trap caught in feature 001 — Decimal scale varies
+    # with storage/computation history, so string comparison is flaky.
     assert Decimal(str(data["unit_price"])) == Decimal("150000")
 
 

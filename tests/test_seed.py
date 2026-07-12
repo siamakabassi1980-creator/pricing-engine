@@ -112,3 +112,30 @@ def test_migration_upgrade_then_downgrade_roundtrip(engine: Engine) -> None:
     inspector = inspect(engine)
     assert "products" not in inspector.get_table_names()
     assert "customer_tiers" not in inspector.get_table_names()
+
+
+def test_seed_restores_deleted_product_on_reseed(
+    session_factory: sessionmaker[Session],
+) -> None:
+    """A deleted seed product reappears on the next seed_database() run.
+
+    This pins the known restore-on-reseed behavior documented in ADR-0003:
+    seed_database() checks existence via SELECT and INSERTs anything missing,
+    so a DELETE on a seed product is not permanent — it returns on the next
+    reseed (e.g. app restart). Operators must be aware of this caveat.
+    """
+    with session_factory() as session:
+        seed_database(session)
+        # Delete a seed product via direct ORM (simulates the DELETE endpoint).
+        headphone = session.get(Product, "headphone-x")
+        assert headphone is not None
+        session.delete(headphone)
+        session.commit()
+        assert session.get(Product, "headphone-x") is None
+
+    # Re-run seed: the deleted product must be restored (re-inserted).
+    with session_factory() as session:
+        result = seed_database(session)
+        assert result["products_inserted"] == 1
+        assert result["products_skipped"] == 7
+        assert session.get(Product, "headphone-x") is not None
