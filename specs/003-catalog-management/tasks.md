@@ -70,6 +70,13 @@
 - [ ] Linter + mypy صفر.
 - [ ] commit: `feat(api): add five catalog CRUD endpoints (T2.1)`
 
+### T2.1b — رگرسیون فیچر 001 (checkpoint مستقل)
+> مستقل از T2.1 تا حین اجرا گم نشود. به‌محض پایان T2.1 و پیش از T2.2.
+- [ ] `pytest tests/api/test_price_endpoint.py -v` — هر ۶ تست pass.
+- [ ] اگر شکست: توقف (Fail Fast)، گزارش، رفع پیش از ادامه.
+
+
+
 ### T2.2 — تست integration endpoint
 - [ ] `tests/api/test_catalog_endpoints.py`: همهٔ مسیرها (موفق + خطا) با
       TestClient + in-memory SQLite (همان fixture الگوی test_price_endpoint).
