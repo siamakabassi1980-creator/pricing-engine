@@ -39,6 +39,11 @@ jobs:
         run: mypy --strict app/
 
       - name: Test with coverage
+        # TODO: when verifying CI against a real remote, switch this to
+        #   bash scripts/check_coverage.sh
+        # which gates each deterministic module (decision, anomaly, catalog)
+        # independently at 80%. The current line only checks app/decision
+        # (stale from feature 001) and misses anomaly/catalog.
         run: pytest tests/ --cov=app/decision --cov-fail-under=80
 
       - name: Dependency audit
