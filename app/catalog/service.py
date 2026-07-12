@@ -68,8 +68,13 @@ def create_product(session: Session, data: ProductCreate) -> Product:
 
 
 def list_products(session: Session) -> list[Product]:
-    """Return all products (order is unspecified, like feature 001)."""
-    return list(session.scalars(select(Product)).all())
+    """Return all products ordered by id.
+
+    ORDER BY is explicit because SQLite (rowid order) and PostgreSQL
+    (heap order, unspecified) differ without it — making integration
+    tests flaky across backends.
+    """
+    return list(session.scalars(select(Product).order_by(Product.id)).all())
 
 
 def get_product(session: Session, product_id: str) -> Product:

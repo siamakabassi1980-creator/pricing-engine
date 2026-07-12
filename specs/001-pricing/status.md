@@ -33,6 +33,12 @@
 از `price()`). طبق قانون Spec Drift: کل `tests/decision/` و `tests/property/`
 دوباره اجرا شد — ۴۱ تست همگی pass، coverage همچنان ۱۰۰٪. فیچر 001 دست‌نخورده است.
 
+## Spec Drift یادداشت (فیچر 003)
+`app/main.py` در T2.1 فیچر 003 دوباره لمس شد — `app.include_router(catalog_router)`
+برای ثبت پنج endpoint CRUD کاتالوگ اضافه شد. طبق قانون Spec Drift: کل
+`tests/api/test_price_endpoint.py` دوباره اجرا شد — هر ۶ تست pass، مسیر
+قیمت‌گذاری (`POST /price`) دست‌نخورده است.
+
 ## کشف‌های این فاز (برای بازگشت به shared-kit)
 
 ۱. **قانون زبان سه‌محوری** — کشف شد که قانون قبلی («کد/مستندات») محور

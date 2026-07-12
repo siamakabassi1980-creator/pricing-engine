@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from app.api.catalog_routes import router as catalog_router
 from app.api.routes import router
 
 
@@ -30,6 +31,9 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
     app.include_router(router)
+    # Feature 003 (catalog-management): CRUD on the products table.
+    # main.py is a feature-001 file; see specs/001-pricing/status.md drift note.
+    app.include_router(catalog_router)
 
     # Create tables at startup (MVP convenience). Wrapped so a missing DB
     # does not crash import or test collection.
