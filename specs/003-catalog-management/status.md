@@ -50,10 +50,14 @@
    PostgreSQL (heap) ترتیب متفاوت می‌دهند. یک باگ بالقوهٔ flaky بین backendها
    که قبل از production گرفته شد.
 
-۳. **coverage config به‌عنوان گیت خودکار.** کشف شد که `pyproject.toml` فقط
-   `app/decision` را coverage می‌کرد، و anomaly/catalog با چک دستی جدا تأیید
-   می‌شدند. اصلاح شد تا یک دستور واحد، هر سه ماژول بحرانی را با آستانهٔ ۸۰٪
-   چک کند. این AC را پایدار می‌کند، نه یک رقم دستی.
+۳. **coverage config به‌عنوان گیت مستقل خودکار.** کشف شد که `pyproject.toml`
+   فقط `app/decision` را coverage می‌کرد، و anomaly/catalog با چک دستی جدا
+   تأیید می‌شدند. اولین راه‌حل (یک `source` ترکیبی با یک `fail_under`) حفره‌ای
+   داشت: میانگین ترکیبی می‌توانست یک ماژول ضعیف را پشت ماژول‌های قوی پنهان
+   کند. راه‌حل نهایی: `scripts/check_coverage.sh` که سه فراخوانی `pytest --cov`
+   جدا (هرکدام با `--cov-fail-under=80` مستقل) را با `&&` زنجیر می‌کند.
+   تأیید شد: وقتی آستانهٔ anomaly به ۹۵٪ بالا رفت، گیت شکست خورد — حتی با
+   decision/catalog در ۱۰۰٪. این AC را واقعاً پایدار کرد.
 
 ۴. **restore-on-reseed یک محدودیت ذاتی است، نه باگ.** رفتار `seed_database()`
    (SELECT-then-INSERT) باعث می‌شود محصولات seed‌شدهٔ حذف‌شده بعد از restart

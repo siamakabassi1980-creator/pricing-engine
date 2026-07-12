@@ -20,7 +20,8 @@
 ## آمار نهایی پروژه
 - **۱۶۳ تست** pass (شامل ۸ property-based test با Hypothesis)
 - **پوشش سه ماژول دترمینیستیک**: Decision ۱۰۰٪، Anomaly ۹۱٪، Catalog ۱۰۰٪
-  (گیت خودکار واحد در `pyproject.toml`)
+  (گیت مستقل خودکار: `bash scripts/check_coverage.sh` — هر ماژول با آستانهٔ
+  ۸۰٪ مستقل گیت می‌شود، نه میانگین ترکیبی)
 - **mypy --strict: صفر خطا** روی ۳۳ فایل
 - **ruff check: صفر خطا**
 - **pip-audit: صفر آسیب‌پذیری**

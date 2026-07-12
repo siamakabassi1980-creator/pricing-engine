@@ -43,12 +43,14 @@ asyncio_mode = "auto"
 addopts = "-ra --strict-markers"
 
 [tool.coverage.run]
-# Critical deterministic logic modules (per constitution: >=80% required).
-# LLM layers (perception, generation) and thin API routing are excluded —
-# they are non-deterministic or dispatch-only.
-source = ["app/decision", "app/anomaly", "app/catalog"]
+# Per-module coverage is gated independently via scripts/check_coverage.sh
+# (three separate pytest --cov calls, each with its own --cov-fail-under=80).
+# A combined `source` here is deliberately avoided: a single combined average
+# can hide a weak module behind strong ones. Branch coverage is enabled so
+# branch-level gaps count against the threshold.
 branch = true
 
 [tool.coverage.report]
+# Default report settings; the real gate is per-module in the script.
 fail_under = 80
 show_missing = true
