@@ -30,6 +30,12 @@ python -m venv venv
 اگر نصب با timeout روبه‌رو شد، طبق روش مستندشده در بخش دوازده راهنمای SDD،
 wheel را مستقیم با `curl` دانلود و از فایل محلی نصب کن.
 
+> **نکتهٔ مهم (درس از دور Implement فیچر 003):** همیشه از
+> `venv/Scripts/python.exe` استفاده کن، نه `python` سیستم — وگرنه
+> `pydantic_settings` و بقیهٔ وابستگی‌ها پیدا نمی‌شوند و pytest با خطای
+> `ModuleNotFoundError` هنگام collection شکست می‌خورد (۱۲ خطای collection).
+> همین‌طور `venv/Scripts/ruff.exe` و `venv/Scripts/mypy.exe`.
+
 ## نصب pre-commit
 
 ```bash
