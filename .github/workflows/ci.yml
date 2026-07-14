@@ -1,10 +1,9 @@
 # CI pipeline — second line of defense (per constitution).
 # Pre-commit is bypassable with --no-verify; CI is not.
 #
-# Status: done-with-caveat. This workflow is syntactically valid but has
-# NOT been verified against a real GitHub remote (the repo is local-only).
-# Once a remote is added, push and confirm all jobs pass before trusting CI.
-# Tracked in specs/001-pricing/status.md.
+# This workflow runs the same quality gates as local pre-commit, plus the
+# full test suite and the independent per-module coverage gate. It is the
+# authoritative gate: if it passes here, the code is releasable.
 name: CI
 
 on:
@@ -16,6 +15,11 @@ on:
 jobs:
   quality-gates:
     runs-on: ubuntu-latest
+    env:
+      # CI has no real DeepSeek key. allow_dummy_fallback is the explicit
+      # opt-in flag (ADR-0001 security addendum): safe because CI never
+      # serves real customers. Without this, create_app() refuses to start.
+      ALLOW_DUMMY_FALLBACK: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -38,13 +42,11 @@ jobs:
       - name: Type check (mypy)
         run: mypy --strict app/
 
-      - name: Test with coverage
-        # TODO: when verifying CI against a real remote, switch this to
-        #   bash scripts/check_coverage.sh
-        # which gates each deterministic module (decision, anomaly, catalog)
-        # independently at 80%. The current line only checks app/decision
-        # (stale from feature 001) and misses anomaly/catalog.
-        run: pytest tests/ --cov=app/decision --cov-fail-under=80
+      - name: Test suite (full)
+        run: pytest -q
+
+      - name: Coverage gate (independent per-module)
+        run: bash scripts/check_coverage.sh
 
       - name: Dependency audit
         run: pip-audit -r requirements.txt
