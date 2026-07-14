@@ -2,7 +2,12 @@
 
 > آخرین به‌روزرسانی: ۲۰۲۶-۰۷-۱۱
 
-## وضعیت کلی: ✅ done (با یک caveat: CI)
+## وضعیت کلی: ✅ done
+
+> **Caveat CI بسته شد (۲۰۲۶-۰۷-۱۴):** workflow واقعاً روی remote گیت‌هاب تأیید شد.
+> Run: https://github.com/siamakabassi1980-creator/pricing-engine/actions/runs/29376930147
+> همهٔ ۸ quality gate (lint, format, mypy, full test suite, coverage مستقل،
+> pip-audit) سبز شدند.
 
 | بُعد | وضعیت | توضیح |
 |---|---|---|
@@ -13,7 +18,7 @@
 | ruff check | ✅ صفر خطا | کل پروژه |
 | pip-audit | ✅ صفر آسیب‌پذیری | |
 | pre-commit | ✅ نصب و تأیید | تست خطای عمدی رد شد |
-| CI workflow | ⚠️ done-with-caveat | فایل ساخته شد ولی remote گیت‌هاب فعلاً موجود نیست |
+| CI workflow | ✅ done | تأیید واقعی روی remote: run #29376930147 (سبز، همهٔ quality gates pass، ۲۰۲۶-۰۷-۱۴) |
 
 ## معیارهای پذیرش (AC) و وضعیت نهایی
 | AC | شرح | وضعیت |
