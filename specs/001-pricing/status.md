@@ -9,6 +9,12 @@
 > همهٔ ۸ quality gate (lint, format, mypy, full test suite, coverage مستقل،
 > pip-audit) سبز شدند.
 
+> **CI از «گزارش» به «گیت» ارتقا یافت (۲۰۲۶-۰۷-۱۵):** branch protection روی
+> `master` فعال شد — merge بدون CI سبز غیرممکن است. تست زنده تأیید کرد: یک PR با
+> خطای عمدی (E402) ساخته شد؛ CI آن را fail کرد (`quality-gates: failure`) و
+> `mergeable_state: unstable` دکمهٔ merge را مسدود کرد. PR #1 (بسته‌شده) شاهد
+> زنده است. این یعنی pre-commit با `--no-verify` قابل‌دورزدن است، ولی CI دیگر نه.
+
 | بُعد | وضعیت | توضیح |
 |---|---|---|
 | کد | ✅ کامل | ۳ لایه Perception/Decision/Generation + API endpoint |
