@@ -62,3 +62,5 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Factory used as a FastAPI dependency and in tests."""
     return Settings()
+
+import os  # noqa: intentional lint error for branch protection test
